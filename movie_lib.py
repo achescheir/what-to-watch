@@ -1,7 +1,7 @@
 import csv
 import datetime as dt
 import statistics as stats
-
+import math
 #u.user: user id | age | gender | occupation | zip code
 class User:
     def __init__(self, init_list):
@@ -148,6 +148,40 @@ class MovieLibrary:
             return top_unseen_ids
         else:
             return top_unseen_ids[:number_of_movies]
-# read_movies(10)
-# read_users(10)
-# read_ratings(10)
+    @staticmethod
+    def _euclidean_distance(v, w): #provided by assignment
+        """Given two lists, give the Euclidean distance between them on a scale
+        of 0 to 1. 1 means the two lists are identical.
+        """
+
+        # Guard against empty lists.
+        if len(v) is 0:
+            return 0
+
+        # Note that this is the same as vector subtraction.
+        differences = [v[idx] - w[idx] for idx in range(len(v))]
+        squares = [diff ** 2 for diff in differences]
+        sum_of_squares = sum(squares)
+
+        return 1 / (1 + math.sqrt(sum_of_squares))
+
+    def compare_users(self, user1_id, user2_id):
+        user1_ratings = {x.movie : x.rating for x in self.ratings_by_user[user1_id]}
+        user2_ratings = {x.movie : x.rating for x in self.ratings_by_user[user2_id]}
+        in_common = [x for x in user1_ratings.keys() if x in user2_ratings.keys()]
+        user1_ratings_in_common = [user1_ratings[x] for x in in_common]
+        user2_ratings_in_common = [user2_ratings[x] for x in in_common]
+        distance = self._euclidean_distance(user1_ratings_in_common, user2_ratings_in_common)
+        return (len(in_common),distance)
+
+    def get_similar_users(self, user1_id, min_in_common=5, number_to_get=10):
+        similartity = {x:self.compare_users(user1_id,x) for x in self.users.keys()}
+        enough_in_common = []
+        for x in similartity.keys():
+            if x == user1_id:
+                continue
+            if similartity[x][0] >= min_in_common:
+                enough_in_common.append(x)
+        enough_in_common.sort(key=lambda x:similartity[x])
+        enough_in_common.reverse()
+        return enough_in_common[:number_to_get]
