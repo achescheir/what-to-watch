@@ -1,5 +1,6 @@
 import csv
 import datetime as dt
+import statistics as stats
 
 #u.user: user id | age | gender | occupation | zip code
 class User:
@@ -51,40 +52,102 @@ class Movie:
     def get_ratings(self, ratings_list):
         return [x for x in ratings_list if x.movie == self.id]
 
+    def get_ratings_value(self, ratings_list):
+        return [x.rating for x in ratings_list if x.movie == self.id]
+
     def get_avg_rating(self, ratings_list):
-        ratings = self.get_ratings(ratings_list)
-        return sum([x.rating for x in ratings]) / len(ratings)
+        ratings = self.get_ratings_value(ratings_list)
+        return stats.mean(ratings) #sum([x.rating for x in ratings]) / len(ratings)
 
-def get_title_by_id(movie_id, movies_list):
-    movies = [x for x in movies_list if x.id == movie_id]
-    if len(movies) == 1:
-        return movies[0].title
-    elif len(movies) == 0:
-        return None
-    else:
-        raise ValueError('More than 1 movie with the id: {}.'.format(movie_id))
+    @staticmethod
+    def get_title_by_id(movie_id, movies):
+        return movies[movie_id]
 
-def read_file(filename, delim, constructor, number_of_items='all'):
-    items = []
-    with open(filename,'r') as f:
-        reader = csv.reader(f, delimiter = delim)
-        for number, row in enumerate(reader):
-            items.append(constructor(row))
-            if number_of_items == 'all':
-                continue
-            elif number >= number_of_items - 1:
-                break
-    return items
+class MovieLibrary:
+    def __init__(self, ratings_file='ml-100k/u.data', movies_file='ml-100k/u.item', users_file='ml-100k/u.user'):
+        self.ratings = self.read_ratings(filename=ratings_file)
+        self.users = self.read_users(filename=users_file)
+        self.movies = self.read_movies(filename=movies_file)
+        self.ratings_by_movie = self.get_ratings_by_movie()
+        self.ratings_by_user = self.get_ratings_by_user()
 
-def read_movies(number_of_movies ='all', filename='ml-100k/u.item'):
-    return read_file(filename,'|', Movie, number_of_movies)
+    @staticmethod
+    def _read_items_file(filename, delim, constructor, number_of_items='all'):
+        items = {}
+        with open(filename,'r',encoding = "latin_1") as f:
+            reader = csv.reader(f, delimiter = delim)
+            for row in reader:
+                this_item = constructor(row)
+                items[this_item.id] = this_item
+                if number_of_items == 'all':
+                    continue
+                elif len(items) >= number_of_items:
+                    break
+        return items
 
-def read_users(number_of_users='all', filename='ml-100k/u.user'):
-    return read_file(filename, '|', User, number_of_users)
+    @staticmethod
+    def read_movies(number_of_movies ='all', filename='ml-100k/u.item'):
+        return MovieLibrary._read_items_file(filename,'|',Movie, number_of_movies)
 
-def read_ratings(number_of_ratings='all', filename='ml-100k/u.data'):
-    return read_file(filename,'\t',Rating, number_of_ratings)
+    @staticmethod
+    def read_users(number_of_users='all', filename='ml-100k/u.user'):
+        return MovieLibrary._read_items_file(filename,'|',User, number_of_users)
 
+    @staticmethod
+    def read_ratings(number_of_ratings='all', filename='ml-100k/u.data'):
+        ratings = []
+        with open(filename, 'r') as f:
+            reader = csv.reader(f, delimiter = '\t')
+            for row in reader:
+                ratings.append(Rating(row))
+                if number_of_ratings == 'all':
+                    continue
+                elif len(ratings) >= number_of_ratings:
+                    break
+        return ratings
+
+    def get_ratings_by_movie(self):
+        ratings_by_movie ={}
+        for rating in self.ratings:
+            if rating.movie in ratings_by_movie:
+                ratings_by_movie[rating.movie].append(rating)
+            else:
+                ratings_by_movie[rating.movie] = [rating]
+        return ratings_by_movie
+
+    def get_ratings_by_user(self):
+        ratings_by_user ={}
+        for rating in self.ratings:
+            if rating.user in ratings_by_user:
+                ratings_by_user[rating.user].append(rating)
+            else:
+                ratings_by_user[rating.user] = [rating]
+        return ratings_by_user
+
+    def get_movie_ids_sorted_by_avg_rating(self):
+        movie_ids = list(self.ratings_by_movie.keys())
+        movie_ids.sort(key = lambda x:stats.mean([y.rating for y in self.ratings_by_movie[x]]))
+        return movie_ids
+
+    def get_top_popular_movies(self, number_of_movies='all', min_ratings='1%'):
+        if min_ratings == '1%':
+            min_ratings = len(self.users)/100
+        sorted_ids = self.get_movie_ids_sorted_by_avg_rating()
+        sorted_ids.reverse()
+        top_movie_ids = [x for x in sorted_ids if len(self.ratings_by_movie[x]) >= min_ratings]
+        if number_of_movies == 'all':
+            return top_movie_ids
+        else:
+            return top_movie_ids[:number_of_movies]
+
+    def get_popular_movies_for_user(self, user, number_of_movies='all', min_ratings='1%'):
+        top_movie_ids = self.get_top_popular_movies(min_ratings = min_ratings)
+        user_ratings = [y.movie for y in self.ratings_by_user[user.id]]
+        top_unseen_ids = [x for x in top_movie_ids if x not in user_ratings]
+        if number_of_movies == 'all':
+            return top_unseen_ids
+        else:
+            return top_unseen_ids[:number_of_movies]
 # read_movies(10)
 # read_users(10)
 # read_ratings(10)

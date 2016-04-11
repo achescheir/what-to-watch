@@ -42,9 +42,9 @@ def test_movie_constructor():
         "Fantasy":0,"Film-Noir":0, "Horror":0, "Musical":0, "Mystery":0,
         "Romance":0, "Sci-Fi":0,"Thriller":0, "War":0, "Western":0}
 
-test_movies = ml.read_movies(100)
-test_users = ml.read_users(100)
-test_ratings = ml.read_ratings(1000)
+test_movies = ml.MovieLibrary.read_movies(100)
+test_users = ml.MovieLibrary.read_users(100)
+test_ratings = ml.MovieLibrary.read_ratings(1000)
 
 def test_user_get_ratings():
     test_ratings = [ml.Rating(['1','1','3','0']), ml.Rating(['1','2','3','0']),
@@ -76,7 +76,7 @@ def test_movie_get_ratings():
     assert test_movie2.get_ratings(test_ratings) == [test_ratings[1],test_ratings[4]]
     assert test_movie3.get_ratings(test_ratings) == [test_ratings[2]]
 
-def test_movie_get_ratings():
+def test_movie_get_avg_rating():
     test_ratings = [ml.Rating(['1','1','1','0']), ml.Rating(['1','2','1','0']),
         ml.Rating(['1','3','4','0']), ml.Rating(['2','1','2','0']),
         ml.Rating(['2','2','5','0']), ml.Rating(['3','1','3','0'])]
@@ -105,9 +105,9 @@ def test_get_title_by_id():
         'http://us.imdb.com/M/title-exact?Get%20Shorty%20(1995)','0','1','0','0',
         '0','1','0','0','1','0','0','0','0','0','0','0','0','0','0'])
     test_movies = [test_movie1, test_movie2, test_movie3]
-    assert ml.get_title_by_id('1', test_movies) == 'Get Shorty (1995)'
-    assert ml.get_title_by_id('2', test_movies) == 'Get Shorty 2 (1995)'
-    assert ml.get_title_by_id('3', test_movies) == 'Get Shorty 3 (1995)'
+    assert ml.Movie.get_title_by_id('1', test_movies) == 'Get Shorty (1995)'
+    assert ml.Movie.get_title_by_id('2', test_movies) == 'Get Shorty 2 (1995)'
+    assert ml.Movie.get_title_by_id('3', test_movies) == 'Get Shorty 3 (1995)'
 
 @raises(ValueError)
 def test_get_title_by_id_duplicate_entry():
@@ -121,7 +121,7 @@ def test_get_title_by_id_duplicate_entry():
         'http://us.imdb.com/M/title-exact?Get%20Shorty%20(1995)','0','1','0','0',
         '0','1','0','0','1','0','0','0','0','0','0','0','0','0','0'])
     test_movies = [test_movie1, test_movie1, test_movie2, test_movie3]
-    ml.get_title_by_id('1',test_movies)
+    ml.Movie.get_title_by_id('1',test_movies)
 
 @raises(ValueError)
 def test_get_title_by_id_duplicate_id():
@@ -135,4 +135,7 @@ def test_get_title_by_id_duplicate_id():
         'http://us.imdb.com/M/title-exact?Get%20Shorty%20(1995)','0','1','0','0',
         '0','1','0','0','1','0','0','0','0','0','0','0','0','0','0'])
     test_movies = [test_movie1, test_movie2, test_movie3]
-    ml.get_title_by_id('1',test_movies)
+    ml.Movie.get_title_by_id('1',test_movies)
+
+def test_movielib():
+    ml.MovieLibrary()
